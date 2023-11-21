@@ -11,3 +11,10 @@ If using intellij, add these to your run configuration:
 ![img](images/intellij-2.png)
 
 There are many ways to create fresh VAPID keys, such as via [web-push](https://www.npmjs.com/package/web-push) and [webpush-java](https://github.com/web-push-libs/webpush-java).
+
+Similarly, a JWT signing key is provided for testing.
+A new key can be generated as follows:
+
+```bash
+head -c 256 /dev/random | hexdump -v -e '/1 "%02X"'
+```
