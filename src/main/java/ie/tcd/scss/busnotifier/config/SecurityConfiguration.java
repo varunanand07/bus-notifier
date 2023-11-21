@@ -27,13 +27,10 @@ public class SecurityConfiguration {
        return http
                .csrf(csrf -> csrf.disable())
                .authorizeHttpRequests(authorize -> authorize
-                       // Allow requests to these routes to pass through
                        .requestMatchers("/login", "/register", "/publicKey")
                        .permitAll()
-                       // All other requests require auth
                        .anyRequest()
                        .authenticated())
-               // JWT should be passed for every request
                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                .authenticationProvider(authenticationProvider)
                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

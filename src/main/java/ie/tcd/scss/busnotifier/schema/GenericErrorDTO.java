@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GenericErrorDTO {
-    private String code;
-    private String message;
+    public String code;
+    public String message;
 }
