@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/jwt_security
-    username:
-    password:
+    url: jdbc:postgresql://localhost:54321/bus_notifier
+    username: spring-boot
+    password: spring-boot
     driver: org.postgresql.Driver
   jpa:
     hibernate:
