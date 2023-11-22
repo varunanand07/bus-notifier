@@ -2,9 +2,12 @@ package ie.tcd.scss.busnotifier.service;
 
 import ie.tcd.scss.busnotifier.domain.BrowserEndpoint;
 import ie.tcd.scss.busnotifier.domain.DublinBusSubscription;
+import ie.tcd.scss.busnotifier.domain.DublinBusSubscriptionActiveTimeRange;
 import ie.tcd.scss.busnotifier.domain.User;
 import ie.tcd.scss.busnotifier.repo.BrowserEndpointRepo;
+import ie.tcd.scss.busnotifier.repo.DublinBusSubscriptionActiveTimeRangeRepo;
 import ie.tcd.scss.busnotifier.repo.DublinBusSubscriptionRepo;
+import ie.tcd.scss.busnotifier.schema.DublinBusSubscriptionActiveTimeRangeDTO;
 import ie.tcd.scss.busnotifier.schema.DeleteDublinBusSubscriptionsDTO;
 import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
@@ -22,13 +25,17 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Security;
+import java.time.DayOfWeek;
+import java.util.Calendar;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 
 @Service
 public class NotificationService {
 
     private final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+
     @Value("${vapid.public.key}")
     private String publicKey;
     @Value("${vapid.private.key}")
@@ -41,6 +48,9 @@ public class NotificationService {
     @Autowired
     private DublinBusSubscriptionRepo dublinBusSubscriptionRepo;
 
+    @Autowired
+    private DublinBusSubscriptionActiveTimeRangeRepo dublinBusSubscriptionActiveTimeRangeRepo;
+
     private PushService pushService;
 
     @PostConstruct
@@ -50,21 +60,57 @@ public class NotificationService {
     }
 
     // Send a notification to users every second
-    @Scheduled(fixedRate = 60_000)
+    @Scheduled(fixedRate = 10_000)
     private void push() {
-        for (var sub : browserEndpointRepo.findAll()) {
-            logger.info("Sending to to " +  sub.endpoint);
-            try {
-                var notification = new Notification(
-                        sub.endpoint,
-                        sub.userPublicKey,
-                        sub.userAuth,
-                        "\"TODO: USE DUBLIN BUS API LOGIC\""
+        for (var subscription : dublinBusSubscriptionRepo.findAll()) {
+            var now = Calendar.getInstance();
+            final var day = DayOfWeek.of((now.get(Calendar.DAY_OF_WEEK) + 6) % 7);
+            final var hour = now.get(Calendar.HOUR_OF_DAY);
+            final var minute = now.get(Calendar.MINUTE);
+            if (dublinBusSubscriptionActiveTimeRangeRepo
+                    .findByDublinBusSubscription(subscription)
+                    .stream()
+                    .anyMatch(r -> r.contains(day, hour, minute))) {
+                var message = String.format(
+                        "Bus stop `%s` for user `%s` is active (now=%s, %02d:%02d)",
+                        subscription.getBusStopId(),
+                        subscription.getUser().getUsername(),
+                        day.toString(),
+                        hour,
+                        minute
                 );
-                pushService.send(notification);
-            } catch (GeneralSecurityException | IOException | JoseException | ExecutionException |
-                     InterruptedException e) {
-                throw new RuntimeException(e);
+                logger.info(message);
+                for (var browserEndpoint : browserEndpointRepo.findByDublinBusSubscriptions(subscription)){
+                    message = String.format(
+                            "Sending to `%s` (`%s`#`%s`)",
+                            browserEndpoint.getEndpoint(),
+                            browserEndpoint.getUser().getUsername(),
+                            subscription.getBusStopId()
+                    );
+                    logger.info(message);
+                    try {
+                        var notification = new Notification(
+                                browserEndpoint.getEndpoint(),
+                                browserEndpoint.getUserPublicKey(),
+                                browserEndpoint.getUserAuth(),
+                                "\"TODO: USE DUBLIN BUS API LOGIC\""
+                        );
+                        pushService.send(notification);
+                    } catch (GeneralSecurityException | IOException | JoseException | ExecutionException |
+                         InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } else {
+                var message = String.format(
+                        "Bus stop `%s` for user `%s` is not active (now=%s, %02d:%02d)",
+                        subscription.getBusStopId(),
+                        subscription.getUser().getUsername(),
+                        day.toString(),
+                        hour,
+                        minute
+                );
+                logger.info(message);
             }
         }
     }
@@ -87,11 +133,11 @@ public class NotificationService {
      * @param endpoint The push vendor URL generated by the browser
      * @return true if an element was deleted, false otherwise
      */
-    public boolean removeBrowserEndpoints(String endpoint) {
+    public boolean deleteBrowserEndpoint(User user, String endpoint) {
         // This is not thread safe (time of check vs. time of use problem) and requires
         // two database queries when it should only take one.
-        if (browserEndpointRepo.existsById(endpoint)) {
-            browserEndpointRepo.deleteById(endpoint);
+        if (browserEndpointRepo.existsByUserAndEndpoint(user, endpoint)) {
+            browserEndpointRepo.deleteByUserAndEndpoint(user, endpoint);
             return true;
         } else {
             return false;
@@ -106,29 +152,78 @@ public class NotificationService {
     }
 
     public List<BrowserEndpoint> getBrowserEndpointsForUser(User user) {
-        return browserEndpointRepo.findByUser(user).stream().toList();
+        return browserEndpointRepo.findByUser(user);
     }
 
-    public void addDublinBusSubscription(User user, String endpoint, String busStopIdentifier) {
-        var browserEndpoint = browserEndpointRepo.findById(endpoint).orElseThrow();
-        if (browserEndpoint.user.getId() != user.getId()) {
-            return;
-        }
-        if (!dublinBusSubscriptionRepo.existsById(busStopIdentifier)) {
-            var dublinBusSubscription = new DublinBusSubscription(user,  browserEndpoint, busStopIdentifier);
+    public void addDublinBusSubscription(User user, String endpoint, String busStopId) {
+        var browserEndpoint = browserEndpointRepo.findByUserAndEndpoint(user, endpoint).orElseThrow();
+        if (!dublinBusSubscriptionRepo.existsByUserAndBusStopId(user, busStopId)) {
+            var dublinBusSubscription = DublinBusSubscription.builder()
+                    .user(user)
+                    .busStopId(busStopId)
+                    .browserEndpoints(List.of(browserEndpoint))
+                    .activeTimeRanges(List.of())
+                    .build();
             dublinBusSubscriptionRepo.save(dublinBusSubscription);
         }
     }
 
     public List<DublinBusSubscription> getDublinBusSubscriptions(User user) {
-        return dublinBusSubscriptionRepo.findByUser(user).stream().toList();
+        return dublinBusSubscriptionRepo.findByUser(user);
     }
 
     public void deleteDublinBusSubscriptions(User user, List<DeleteDublinBusSubscriptionsDTO.DublinBusSubscriptionDTO> toDelete) {
         for (var deletionCandidate : toDelete) {
-            var endpoint = deletionCandidate.endpoint;
             var busStopIdentifier = deletionCandidate.busStopIdentifier;
-            dublinBusSubscriptionRepo.deleteByUserIdAndBrowserEndpointEndpointAndBusStopId(user.getId(), endpoint, busStopIdentifier);
+            browserEndpointRepo
+                    .findByUserAndEndpoint(user, deletionCandidate.endpoint)
+                    .ifPresent(endpoint -> {
+                        var changed = false;
+                        for (int i = endpoint.dublinBusSubscriptions.size() - 1; i >= 0; i--) {
+                            if (endpoint.dublinBusSubscriptions.get(i).getBusStopId().equals(busStopIdentifier)) {
+                                endpoint.dublinBusSubscriptions.remove(i);
+                                changed = true;
+                            }
+                        }
+                        if (changed) {
+                            browserEndpointRepo.save(endpoint);
+                        }
+                    });
         }
+    }
+
+    public void deleteDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+        var validatedTimeRange = request.validate();
+        dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId).ifPresent(sub -> {
+            var changed = false;
+            for (int i = sub.activeTimeRanges.size() - 1; i >= 0; i--) {
+                if (sub.activeTimeRanges.get(i).overlaps(validatedTimeRange)) {
+                    sub.activeTimeRanges.remove(i);
+                    changed = true;
+                }
+            }
+            if (changed)
+                dublinBusSubscriptionRepo.save(sub);
+        });
+    }
+    public void addDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+        var transientTimeRange = request.validate();
+        var busStop = dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId);
+        var dublinBusSubscription = busStop.orElseGet(() -> dublinBusSubscriptionRepo.save(DublinBusSubscription
+                .builder()
+                .user(user)
+                .busStopId(busStopId)
+                .build()));
+        transientTimeRange.dublinBusSubscription = dublinBusSubscription;
+        var savedTimeRange = dublinBusSubscriptionActiveTimeRangeRepo.save(transientTimeRange);
+        dublinBusSubscription.getActiveTimeRanges().add(savedTimeRange);
+        dublinBusSubscriptionRepo.save(dublinBusSubscription);
+    }
+
+    public List<DublinBusSubscriptionActiveTimeRange> getDublinBusActiveTimeRanges(User user, String busStopId) throws NoSuchElementException {
+        return dublinBusSubscriptionRepo
+                .findByUserAndBusStopId(user, busStopId)
+                .map(DublinBusSubscription::getActiveTimeRanges)
+                .orElseThrow();
     }
 }

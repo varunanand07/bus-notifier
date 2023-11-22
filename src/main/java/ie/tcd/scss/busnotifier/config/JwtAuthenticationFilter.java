@@ -1,7 +1,5 @@
 package ie.tcd.scss.busnotifier.config;
 
-import ie.tcd.scss.busnotifier.domain.User;
-import ie.tcd.scss.busnotifier.schema.UserDTO;
 import ie.tcd.scss.busnotifier.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -1,6 +1,5 @@
 package ie.tcd.scss.busnotifier.config;
 
-import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
