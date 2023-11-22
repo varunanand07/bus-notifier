@@ -25,6 +25,9 @@ public class DublinBusSubscription {
     @Column
     private String busStopId;
 
+    @Column
+    private String busId;
+
     @ManyToOne
     public User user;
 

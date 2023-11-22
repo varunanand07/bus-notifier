@@ -138,7 +138,7 @@ class BusnotifierApplicationTests {
 		assertEquals(browserEndpointDTOs.length, 1);
 		assertThat(browserEndpointDTOs[0].endpoint).isEqualTo(subscription.endpoint);
 
-		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "66a");
+		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "4407", "66a");
 		var dublinBusSubscriptionDTOsResponse = withToken(
 				restTemplate::postForEntity,
 				token,
@@ -150,8 +150,9 @@ class BusnotifierApplicationTests {
 		var dublinBusSubscriptionDTOs = dublinBusSubscriptionDTOsResponse.getBody();
 		assertNotNull(dublinBusSubscriptionDTOs);
 		assertEquals(dublinBusSubscriptionDTOs.length, 1);
-		assertEquals(dublinBusSubscriptionDTOs[0].busStopId, request.busStopId);
-		assertEquals(dublinBusSubscriptionDTOs[0].endpoints.get(0), request.endpoint);
+		assertEquals(request.busStopId, dublinBusSubscriptionDTOs[0].busStopId);
+		assertEquals(request.busId, dublinBusSubscriptionDTOs[0].busId);
+		assertEquals(request.endpoint, dublinBusSubscriptionDTOs[0].endpoints.get(0));
 	}
 
 	@Test
@@ -179,7 +180,7 @@ class BusnotifierApplicationTests {
 		assertEquals(browserEndpointDTOs.length, 1);
 		assertThat(browserEndpointDTOs[0].endpoint).isEqualTo(subscription.endpoint);
 
-		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "66a");
+		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "4407", "66a");
 		var dublinBusSubscriptionDTOsResponse = withToken(
 				restTemplate::postForEntity,
 				token,
@@ -192,6 +193,7 @@ class BusnotifierApplicationTests {
 		assertNotNull(dublinBusSubscriptionDTOs);
 		assertEquals(1, dublinBusSubscriptionDTOs.length);
 		assertEquals(request.busStopId, dublinBusSubscriptionDTOs[0].busStopId);
+		assertEquals(request.busId, dublinBusSubscriptionDTOs[0].busId);
 		assertEquals(1, dublinBusSubscriptionDTOs[0].endpoints.size());
 		assertEquals(request.endpoint, dublinBusSubscriptionDTOs[0].endpoints.get(0));
 
@@ -199,7 +201,7 @@ class BusnotifierApplicationTests {
 		var dublinBusSubscriptionActiveTimeRangeDTOsResponse = withToken(
 				restTemplate::postForEntity,
 				token,
-				route("dublinBusSubscriptions", request.busStopId, "activeTimeRanges"),
+				route("dublinBusSubscriptions", request.busStopId, request.busId, "activeTimeRanges"),
 				activeTimeRangeRequest,
 				DublinBusSubscriptionActiveTimeRangeDTO[].class
 		);
@@ -207,10 +209,5 @@ class BusnotifierApplicationTests {
 		var dublinBusActiveTimeRangeDTOs = dublinBusSubscriptionActiveTimeRangeDTOsResponse.getBody();
 		assertNotNull(dublinBusSubscriptionDTOs);
 		assertEquals(1, dublinBusActiveTimeRangeDTOs.length);
-	}
-
-	@Test
-	public void noSpuriousBusStopsAreGenerated() {
-
 	}
 }

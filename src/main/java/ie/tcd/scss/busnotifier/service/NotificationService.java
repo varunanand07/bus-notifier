@@ -155,12 +155,13 @@ public class NotificationService {
         return browserEndpointRepo.findByUser(user);
     }
 
-    public void addDublinBusSubscription(User user, String endpoint, String busStopId) {
+    public void addDublinBusSubscription(User user, String endpoint, String busStopId, String busId) {
         var browserEndpoint = browserEndpointRepo.findByUserAndEndpoint(user, endpoint).orElseThrow();
-        if (!dublinBusSubscriptionRepo.existsByUserAndBusStopId(user, busStopId)) {
+        if (!dublinBusSubscriptionRepo.existsByUserAndBusStopIdAndBusId(user, busStopId, busId)) {
             var dublinBusSubscription = DublinBusSubscription.builder()
                     .user(user)
                     .busStopId(busStopId)
+                    .busId(busId)
                     .browserEndpoints(List.of(browserEndpoint))
                     .activeTimeRanges(List.of())
                     .build();
@@ -192,9 +193,9 @@ public class NotificationService {
         }
     }
 
-    public void deleteDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+    public void deleteDublinBusSubscriptionActiveTimeRange(User user, String busStopId, String busId, DublinBusSubscriptionActiveTimeRangeDTO request) {
         var validatedTimeRange = request.validate();
-        dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId).ifPresent(sub -> {
+        dublinBusSubscriptionRepo.findByUserAndBusStopIdAndBusId(user, busStopId, busId).ifPresent(sub -> {
             var changed = false;
             for (int i = sub.activeTimeRanges.size() - 1; i >= 0; i--) {
                 if (sub.activeTimeRanges.get(i).overlaps(validatedTimeRange)) {
@@ -206,13 +207,14 @@ public class NotificationService {
                 dublinBusSubscriptionRepo.save(sub);
         });
     }
-    public void addDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+    public void addDublinBusSubscriptionActiveTimeRange(User user, String busStopId, String busId, DublinBusSubscriptionActiveTimeRangeDTO request) {
         var transientTimeRange = request.validate();
-        var busStop = dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId);
+        var busStop = dublinBusSubscriptionRepo.findByUserAndBusStopIdAndBusId(user, busStopId, busId);
         var dublinBusSubscription = busStop.orElseGet(() -> dublinBusSubscriptionRepo.save(DublinBusSubscription
                 .builder()
                 .user(user)
                 .busStopId(busStopId)
+                .busId(busId)
                 .build()));
         transientTimeRange.dublinBusSubscription = dublinBusSubscription;
         var savedTimeRange = dublinBusSubscriptionActiveTimeRangeRepo.save(transientTimeRange);
@@ -220,9 +222,13 @@ public class NotificationService {
         dublinBusSubscriptionRepo.save(dublinBusSubscription);
     }
 
-    public List<DublinBusSubscriptionActiveTimeRange> getDublinBusActiveTimeRanges(User user, String busStopId) throws NoSuchElementException {
+    public List<DublinBusSubscriptionActiveTimeRange> getDublinBusActiveTimeRanges(
+            User user,
+            String busStopId,
+            String busId
+    ) throws NoSuchElementException {
         return dublinBusSubscriptionRepo
-                .findByUserAndBusStopId(user, busStopId)
+                .findByUserAndBusStopIdAndBusId(user, busStopId, busId)
                 .map(DublinBusSubscription::getActiveTimeRanges)
                 .orElseThrow();
     }

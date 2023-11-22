@@ -77,39 +77,48 @@ public class NotificationController {
             @AuthenticationPrincipal User user,
             @Valid @RequestBody AddDublinBusSubscriptionDTO request
     ) {
-        notificationService.addDublinBusSubscription(user, request.endpoint, request.busStopId);
+        notificationService.addDublinBusSubscription(
+                user,
+                request.endpoint,
+                request.busStopId,
+                request.busId
+        );
         return getDublinBusSubscriptions(user);
     }
 
-    @PostMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    @PostMapping("dublinBusSubscriptions/{busStopId}/{busId}/activeTimeRanges")
     public ResponseEntity<Object> addDublinBusSubscriptionActiveTimeRange(
             @AuthenticationPrincipal User user,
             @PathVariable String busStopId,
+            @PathVariable String busId,
             @RequestBody DublinBusSubscriptionActiveTimeRangeDTO request
     ) {
-        notificationService.addDublinBusSubscriptionActiveTimeRange(user, busStopId, request);
-        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId);
+        notificationService.addDublinBusSubscriptionActiveTimeRange(user, busStopId, busId, request);
+        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId, busId);
     }
 
-    @GetMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    @GetMapping("dublinBusSubscriptions/{busStopId}/{busId}/activeTimeRanges")
     private ResponseEntity<Object> getDublinBusSubscriptionActiveTimeRanges(
             @AuthenticationPrincipal  User user,
-            @PathVariable String busStopId
+            @PathVariable String busStopId,
+            @PathVariable String busId
     ) {
-        var dublinBusActiveTimeRangeDTOs = notificationService.getDublinBusActiveTimeRanges(user, busStopId)
+        var dublinBusActiveTimeRangeDTOs = notificationService
+                .getDublinBusActiveTimeRanges(user, busStopId, busId)
                 .stream()
                 .map(DublinBusSubscriptionActiveTimeRangeDTO::new)
                 .toList();
         return ResponseEntity.ok(dublinBusActiveTimeRangeDTOs);
     }
 
-    @DeleteMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    @DeleteMapping("dublinBusSubscriptions/{busStopId}/{busId}/activeTimeRanges")
     private ResponseEntity<Object> deleteDublinBusSubscriptionActiveTimeRange(
             @AuthenticationPrincipal  User user,
             @PathVariable String busStopId,
+            @PathVariable String busId,
             @RequestBody DublinBusSubscriptionActiveTimeRangeDTO request
     ) {
-        notificationService.deleteDublinBusSubscriptionActiveTimeRange(user, busStopId, request);
-        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId);
+        notificationService.deleteDublinBusSubscriptionActiveTimeRange(user, busStopId, busId, request);
+        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId, busId);
     }
 }
