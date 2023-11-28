@@ -72,7 +72,8 @@ public class NotificationService {
                     .stream()
                     .anyMatch(r -> r.contains(day, hour, minute))) {
                 var message = String.format(
-                        "Bus stop `%s` for user `%s` is active (now=%s, %02d:%02d)",
+                        "Bus `%s` at bus stop `%s` for user `%s` is active (now=%s, %02d:%02d)",
+                        subscription.getBusId(),
                         subscription.getBusStopId(),
                         subscription.getUser().getUsername(),
                         day.toString(),
@@ -82,9 +83,10 @@ public class NotificationService {
                 logger.info(message);
                 for (var browserEndpoint : browserEndpointRepo.findByDublinBusSubscriptions(subscription)){
                     message = String.format(
-                            "Sending to `%s` (`%s`#`%s`)",
+                            "Sending to `%s` for user `%s` (bus=`%s`, stop=`%s`)",
                             browserEndpoint.getEndpoint(),
                             browserEndpoint.getUser().getUsername(),
+                            subscription.getBusId(),
                             subscription.getBusStopId()
                     );
                     logger.info(message);
@@ -103,8 +105,9 @@ public class NotificationService {
                 }
             } else {
                 var message = String.format(
-                        "Bus stop `%s` for user `%s` is not active (now=%s, %02d:%02d)",
+                        "Bus `%s` at bus stop `%s` for user `%s` is not active (now=%s, %02d:%02d)",
                         subscription.getBusStopId(),
+                        subscription.getBusId(),
                         subscription.getUser().getUsername(),
                         day.toString(),
                         hour,
