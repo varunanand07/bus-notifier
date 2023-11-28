@@ -12,8 +12,8 @@ public interface DublinBusSubscriptionRepo extends CrudRepository<DublinBusSubsc
 
     @EntityGraph(attributePaths = { "user" })
     Iterable<DublinBusSubscription> findAll();
-    Optional<DublinBusSubscription> findByUserAndBusStopId(User user, String busStopId);
+    Optional<DublinBusSubscription> findByUserAndBusStopIdAndBusId(User user, String busStopId, String busId);
     List<DublinBusSubscription> findByUser(User user);
 
-    boolean existsByUserAndBusStopId(User user, String busStopIdentifier);
+    boolean existsByUserAndBusStopIdAndBusId(User user, String busStopIdentifier, String busId);
 }

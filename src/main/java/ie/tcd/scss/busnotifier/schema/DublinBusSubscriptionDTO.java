@@ -13,8 +13,12 @@ public class DublinBusSubscriptionDTO {
 
     public List<String> endpoints;
     public String busStopId;
+
+    public String busId;
+
     public DublinBusSubscriptionDTO(DublinBusSubscription dublinBusSubscription) {
         this.endpoints = dublinBusSubscription.getBrowserEndpoints().stream().map(BrowserEndpoint::getEndpoint).toList();
         this.busStopId = dublinBusSubscription.getBusStopId();
+        this.busId = dublinBusSubscription.getBusId();
     }
 }

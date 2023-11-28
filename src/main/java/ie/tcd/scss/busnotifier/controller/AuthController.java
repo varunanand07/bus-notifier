@@ -6,15 +6,18 @@ import ie.tcd.scss.busnotifier.schema.GenericErrorDTO;
 import ie.tcd.scss.busnotifier.schema.LoginRequestDTO;
 import ie.tcd.scss.busnotifier.schema.RegisterRequestDTO;
 import ie.tcd.scss.busnotifier.service.AuthService;
+import jdk.jfr.Description;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
 @RequiredArgsConstructor
+@RestController
+@CrossOrigin
 public class AuthController {
 
     @Autowired

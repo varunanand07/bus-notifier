@@ -12,4 +12,7 @@ public class AddDublinBusSubscriptionDTO {
 
     @NotBlank
     public String busStopId;
+
+    @NotBlank
+    public String busId;
 }

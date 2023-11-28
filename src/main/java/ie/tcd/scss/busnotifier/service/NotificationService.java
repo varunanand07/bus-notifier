@@ -72,7 +72,8 @@ public class NotificationService {
                     .stream()
                     .anyMatch(r -> r.contains(day, hour, minute))) {
                 var message = String.format(
-                        "Bus stop `%s` for user `%s` is active (now=%s, %02d:%02d)",
+                        "Bus `%s` at bus stop `%s` for user `%s` is active (now=%s, %02d:%02d)",
+                        subscription.getBusId(),
                         subscription.getBusStopId(),
                         subscription.getUser().getUsername(),
                         day.toString(),
@@ -82,9 +83,10 @@ public class NotificationService {
                 logger.info(message);
                 for (var browserEndpoint : browserEndpointRepo.findByDublinBusSubscriptions(subscription)){
                     message = String.format(
-                            "Sending to `%s` (`%s`#`%s`)",
+                            "Sending to `%s` for user `%s` (bus=`%s`, stop=`%s`)",
                             browserEndpoint.getEndpoint(),
                             browserEndpoint.getUser().getUsername(),
+                            subscription.getBusId(),
                             subscription.getBusStopId()
                     );
                     logger.info(message);
@@ -103,8 +105,9 @@ public class NotificationService {
                 }
             } else {
                 var message = String.format(
-                        "Bus stop `%s` for user `%s` is not active (now=%s, %02d:%02d)",
+                        "Bus `%s` at bus stop `%s` for user `%s` is not active (now=%s, %02d:%02d)",
                         subscription.getBusStopId(),
+                        subscription.getBusId(),
                         subscription.getUser().getUsername(),
                         day.toString(),
                         hour,
@@ -155,12 +158,13 @@ public class NotificationService {
         return browserEndpointRepo.findByUser(user);
     }
 
-    public void addDublinBusSubscription(User user, String endpoint, String busStopId) {
+    public void addDublinBusSubscription(User user, String endpoint, String busStopId, String busId) {
         var browserEndpoint = browserEndpointRepo.findByUserAndEndpoint(user, endpoint).orElseThrow();
-        if (!dublinBusSubscriptionRepo.existsByUserAndBusStopId(user, busStopId)) {
+        if (!dublinBusSubscriptionRepo.existsByUserAndBusStopIdAndBusId(user, busStopId, busId)) {
             var dublinBusSubscription = DublinBusSubscription.builder()
                     .user(user)
                     .busStopId(busStopId)
+                    .busId(busId)
                     .browserEndpoints(List.of(browserEndpoint))
                     .activeTimeRanges(List.of())
                     .build();
@@ -192,9 +196,9 @@ public class NotificationService {
         }
     }
 
-    public void deleteDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+    public void deleteDublinBusSubscriptionActiveTimeRange(User user, String busStopId, String busId, DublinBusSubscriptionActiveTimeRangeDTO request) {
         var validatedTimeRange = request.validate();
-        dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId).ifPresent(sub -> {
+        dublinBusSubscriptionRepo.findByUserAndBusStopIdAndBusId(user, busStopId, busId).ifPresent(sub -> {
             var changed = false;
             for (int i = sub.activeTimeRanges.size() - 1; i >= 0; i--) {
                 if (sub.activeTimeRanges.get(i).overlaps(validatedTimeRange)) {
@@ -206,13 +210,14 @@ public class NotificationService {
                 dublinBusSubscriptionRepo.save(sub);
         });
     }
-    public void addDublinBusSubscriptionActiveTimeRange(User user, String busStopId, DublinBusSubscriptionActiveTimeRangeDTO request) {
+    public void addDublinBusSubscriptionActiveTimeRange(User user, String busStopId, String busId, DublinBusSubscriptionActiveTimeRangeDTO request) {
         var transientTimeRange = request.validate();
-        var busStop = dublinBusSubscriptionRepo.findByUserAndBusStopId(user, busStopId);
+        var busStop = dublinBusSubscriptionRepo.findByUserAndBusStopIdAndBusId(user, busStopId, busId);
         var dublinBusSubscription = busStop.orElseGet(() -> dublinBusSubscriptionRepo.save(DublinBusSubscription
                 .builder()
                 .user(user)
                 .busStopId(busStopId)
+                .busId(busId)
                 .build()));
         transientTimeRange.dublinBusSubscription = dublinBusSubscription;
         var savedTimeRange = dublinBusSubscriptionActiveTimeRangeRepo.save(transientTimeRange);
@@ -220,9 +225,13 @@ public class NotificationService {
         dublinBusSubscriptionRepo.save(dublinBusSubscription);
     }
 
-    public List<DublinBusSubscriptionActiveTimeRange> getDublinBusActiveTimeRanges(User user, String busStopId) throws NoSuchElementException {
+    public List<DublinBusSubscriptionActiveTimeRange> getDublinBusActiveTimeRanges(
+            User user,
+            String busStopId,
+            String busId
+    ) throws NoSuchElementException {
         return dublinBusSubscriptionRepo
-                .findByUserAndBusStopId(user, busStopId)
+                .findByUserAndBusStopIdAndBusId(user, busStopId, busId)
                 .map(DublinBusSubscription::getActiveTimeRanges)
                 .orElseThrow();
     }
