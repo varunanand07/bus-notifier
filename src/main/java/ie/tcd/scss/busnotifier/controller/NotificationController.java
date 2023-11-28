@@ -1,18 +1,14 @@
 package ie.tcd.scss.busnotifier.controller;
 
-import ie.tcd.scss.busnotifier.schema.DeleteDublinBusSubscriptionsDTO;
 import ie.tcd.scss.busnotifier.domain.User;
-import ie.tcd.scss.busnotifier.schema.AddDublinBusSubscriptionDTO;
-import ie.tcd.scss.busnotifier.schema.BrowserEndpointDTO;
-import ie.tcd.scss.busnotifier.schema.DublinBusSubscriptionDTO;
+import ie.tcd.scss.busnotifier.schema.*;
 import ie.tcd.scss.busnotifier.service.NotificationService;
+import jakarta.validation.Valid;
 import nl.martijndwars.webpush.Subscription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 public class NotificationController {
@@ -25,7 +21,9 @@ public class NotificationController {
     }
 
     @GetMapping("browserEndpoints")
-    public ResponseEntity<Object> getBrowserEndpoints(@AuthenticationPrincipal User user) {
+    public ResponseEntity<Object> getBrowserEndpoints(
+            @AuthenticationPrincipal User user
+    ) {
         var browserEndpointDTOS = notificationService
                 .getBrowserEndpointsForUser(user)
                 .stream()
@@ -35,7 +33,10 @@ public class NotificationController {
     }
 
     @PostMapping("browserEndpoints")
-    public ResponseEntity<Object> subscribe(@AuthenticationPrincipal User user, @RequestBody Subscription subscription) {
+    public ResponseEntity<Object> subscribe(
+            @AuthenticationPrincipal User user,
+            @RequestBody Subscription subscription
+    ) {
         notificationService.addBrowserEndpoint(user, subscription);
         return getBrowserEndpoints(user);
     }
@@ -43,8 +44,11 @@ public class NotificationController {
     private record UnsubscribeBody(String endpoint) {}
 
     @DeleteMapping("browserEndpoints")
-    public ResponseEntity<String> unsubscribe(@RequestBody UnsubscribeBody unsubscribeBody) {
-        return notificationService.removeBrowserEndpoints(unsubscribeBody.endpoint)
+    public ResponseEntity<String> unsubscribe(
+            @AuthenticationPrincipal User user,
+            @RequestBody UnsubscribeBody unsubscribeBody
+    ) {
+        return notificationService.deleteBrowserEndpoint(user, unsubscribeBody.endpoint)
                 ? ResponseEntity.ok("")
                 : ResponseEntity.notFound().build();
     }
@@ -69,8 +73,43 @@ public class NotificationController {
     }
 
     @PostMapping("dublinBusSubscriptions")
-    public ResponseEntity<Object> addDublinBusSubscriptions(@AuthenticationPrincipal User user, @RequestBody AddDublinBusSubscriptionDTO request) {
+    public ResponseEntity<Object> addDublinBusSubscriptions(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody AddDublinBusSubscriptionDTO request
+    ) {
         notificationService.addDublinBusSubscription(user, request.endpoint, request.busStopId);
         return getDublinBusSubscriptions(user);
+    }
+
+    @PostMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    public ResponseEntity<Object> addDublinBusSubscriptionActiveTimeRange(
+            @AuthenticationPrincipal User user,
+            @PathVariable String busStopId,
+            @RequestBody DublinBusSubscriptionActiveTimeRangeDTO request
+    ) {
+        notificationService.addDublinBusSubscriptionActiveTimeRange(user, busStopId, request);
+        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId);
+    }
+
+    @GetMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    private ResponseEntity<Object> getDublinBusSubscriptionActiveTimeRanges(
+            @AuthenticationPrincipal  User user,
+            @PathVariable String busStopId
+    ) {
+        var dublinBusActiveTimeRangeDTOs = notificationService.getDublinBusActiveTimeRanges(user, busStopId)
+                .stream()
+                .map(DublinBusSubscriptionActiveTimeRangeDTO::new)
+                .toList();
+        return ResponseEntity.ok(dublinBusActiveTimeRangeDTOs);
+    }
+
+    @DeleteMapping("dublinBusSubscriptions/{busStopId}/activeTimeRanges")
+    private ResponseEntity<Object> deleteDublinBusSubscriptionActiveTimeRange(
+            @AuthenticationPrincipal  User user,
+            @PathVariable String busStopId,
+            @RequestBody DublinBusSubscriptionActiveTimeRangeDTO request
+    ) {
+        notificationService.deleteDublinBusSubscriptionActiveTimeRange(user, busStopId, request);
+        return getDublinBusSubscriptionActiveTimeRanges(user, busStopId);
     }
 }

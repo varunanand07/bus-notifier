@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -31,6 +32,8 @@ class BusnotifierApplicationTests {
 	@Autowired
 	private JwtService jwtService;
 
+	private Random random = new Random();
+
 	private String route(Object... parts) {
 		return "http://localhost:" + port + "/" + String.join("/", Arrays.stream(parts).map(Object::toString).toList());
 	}
@@ -38,14 +41,14 @@ class BusnotifierApplicationTests {
 	/**
 	 * Needed as we want parallel tests but we don't want to slow things down by cleaning up the DB
 	 * after each test
-	 * @return A register request DTO with a randomised user name
+	 * @return A register request DTO with a randomised username
 	 */
 	private RegisterRequestDTO generateRegisterDTO() {
 		return RegisterRequestDTO
 				.builder()
 				.firstname("john")
 				.lastname("squires")
-				.username("xx_johnsquires_" + new Random().nextInt())
+				.username("xx_johnsquires_" + random.nextInt())
 				.password("johnsquires123")
 				.build();
 	}
@@ -54,7 +57,7 @@ class BusnotifierApplicationTests {
 	public void verifyJWTContents() {
 		var registerRequest = generateRegisterDTO();
 		var authenticationResponse = restTemplate.postForEntity(
-				route("/register"),
+				route("register"),
 				registerRequest,
 				AuthenticationResponseDTO.class
 		);
@@ -88,16 +91,18 @@ class BusnotifierApplicationTests {
 	public void canRegisterAndAddBrowserEndpoints() {
 		var registerRequest = generateRegisterDTO();
 		var authenticationResponse = restTemplate.postForEntity(
-				route("/register"),
+				route("register"),
 				registerRequest,
 				AuthenticationResponseDTO.class
 		);
 		assertThat(authenticationResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		var token = authenticationResponse.getBody().getToken();
+
 		var subscription = generateSubscription("endpoint");
 		var browserEndpointDTOsResponse = withToken(
 				restTemplate::postForEntity,
-				authenticationResponse.getBody().getToken(),
-				route("/browserEndpoints"),
+				token,
+				route("browserEndpoints"),
 				subscription,
 				BrowserEndpointDTO[].class
 		);
@@ -112,16 +117,18 @@ class BusnotifierApplicationTests {
 	public void canRegisterAndAddBusStopAssociations() {
 		var registerRequest = generateRegisterDTO();
 		var authenticationResponse = restTemplate.postForEntity(
-				route("/register"),
+				route("register"),
 				registerRequest,
 				AuthenticationResponseDTO.class
 		);
 		assertThat(authenticationResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		var token = authenticationResponse.getBody().getToken();
+
 		var subscription = generateSubscription("endpoint");
 		var browserEndpointDTOsResponse = withToken(
 				restTemplate::postForEntity,
-				authenticationResponse.getBody().getToken(),
-				route("/browserEndpoints"),
+				token,
+				route("browserEndpoints"),
 				subscription,
 				BrowserEndpointDTO[].class
 		);
@@ -134,8 +141,8 @@ class BusnotifierApplicationTests {
 		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "66a");
 		var dublinBusSubscriptionDTOsResponse = withToken(
 				restTemplate::postForEntity,
-				authenticationResponse.getBody().getToken(),
-				route("/dublinBusSubscriptions"),
+				token,
+				route("dublinBusSubscriptions"),
 				request,
 				DublinBusSubscriptionDTO[].class
 		);
@@ -144,6 +151,66 @@ class BusnotifierApplicationTests {
 		assertNotNull(dublinBusSubscriptionDTOs);
 		assertEquals(dublinBusSubscriptionDTOs.length, 1);
 		assertEquals(dublinBusSubscriptionDTOs[0].busStopId, request.busStopId);
-		assertEquals(dublinBusSubscriptionDTOs[0].endpoint, request.endpoint);
+		assertEquals(dublinBusSubscriptionDTOs[0].endpoints.get(0), request.endpoint);
+	}
+
+	@Test
+	public void canManipulateActiveTimeRanges() {
+		var registerRequest = generateRegisterDTO();
+		var authenticationResponse = restTemplate.postForEntity(
+				route("register"),
+				registerRequest,
+				AuthenticationResponseDTO.class
+		);
+		assertThat(authenticationResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		var token = authenticationResponse.getBody().getToken();
+
+		var subscription = generateSubscription("endpoint");
+		var browserEndpointDTOsResponse = withToken(
+				restTemplate::postForEntity,
+				token,
+				route("browserEndpoints"),
+				subscription,
+				BrowserEndpointDTO[].class
+		);
+		assertThat(browserEndpointDTOsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		var browserEndpointDTOs = browserEndpointDTOsResponse.getBody();
+		assertNotNull(browserEndpointDTOs);
+		assertEquals(browserEndpointDTOs.length, 1);
+		assertThat(browserEndpointDTOs[0].endpoint).isEqualTo(subscription.endpoint);
+
+		var request = new AddDublinBusSubscriptionDTO(subscription.endpoint, "66a");
+		var dublinBusSubscriptionDTOsResponse = withToken(
+				restTemplate::postForEntity,
+				token,
+				route("dublinBusSubscriptions"),
+				request,
+				DublinBusSubscriptionDTO[].class
+		);
+		assertEquals(dublinBusSubscriptionDTOsResponse.getStatusCode(), HttpStatus.OK);
+		var dublinBusSubscriptionDTOs = dublinBusSubscriptionDTOsResponse.getBody();
+		assertNotNull(dublinBusSubscriptionDTOs);
+		assertEquals(1, dublinBusSubscriptionDTOs.length);
+		assertEquals(request.busStopId, dublinBusSubscriptionDTOs[0].busStopId);
+		assertEquals(1, dublinBusSubscriptionDTOs[0].endpoints.size());
+		assertEquals(request.endpoint, dublinBusSubscriptionDTOs[0].endpoints.get(0));
+
+		var activeTimeRangeRequest = new DublinBusSubscriptionActiveTimeRangeDTO(DayOfWeek.MONDAY, 7, 0, 8, 30);
+		var dublinBusSubscriptionActiveTimeRangeDTOsResponse = withToken(
+				restTemplate::postForEntity,
+				token,
+				route("dublinBusSubscriptions", request.busStopId, "activeTimeRanges"),
+				activeTimeRangeRequest,
+				DublinBusSubscriptionActiveTimeRangeDTO[].class
+		);
+		assertEquals(HttpStatus.OK, dublinBusSubscriptionActiveTimeRangeDTOsResponse.getStatusCode());
+		var dublinBusActiveTimeRangeDTOs = dublinBusSubscriptionActiveTimeRangeDTOsResponse.getBody();
+		assertNotNull(dublinBusSubscriptionDTOs);
+		assertEquals(1, dublinBusActiveTimeRangeDTOs.length);
+	}
+
+	@Test
+	public void noSpuriousBusStopsAreGenerated() {
+
 	}
 }

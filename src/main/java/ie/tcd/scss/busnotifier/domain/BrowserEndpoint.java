@@ -1,16 +1,22 @@
 package ie.tcd.scss.busnotifier.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
-import java.util.Set;
+import java.util.List;
 
 @Entity
+@Data
 public class BrowserEndpoint {
 
     /**
      * Web Push vendor URL for this browser endpoint.
      */
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    public Integer id;
+
+    @Column
     public String endpoint;
 
     /**
@@ -39,6 +45,6 @@ public class BrowserEndpoint {
     @ManyToOne
     public User user;
 
-    @OneToMany(mappedBy = "browserEndpoint")
-    public Set<DublinBusSubscription> dublinBusSubscriptions;
+    @ManyToMany(mappedBy = "browserEndpoints")
+    public List<DublinBusSubscription> dublinBusSubscriptions;
 }

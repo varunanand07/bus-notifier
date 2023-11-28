@@ -1,28 +1,42 @@
 package ie.tcd.scss.busnotifier.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class DublinBusSubscription {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    @Column
+    private String busStopId;
+
     @ManyToOne
     public User user;
+
+    @OneToMany
+    @Builder.Default
+    @Fetch(value = FetchMode.JOIN)
+    public List<DublinBusSubscriptionActiveTimeRange> activeTimeRanges = new ArrayList<>();
 
     /**
      * The browser endpoints to which notifications for this bus stop will be sent.
      */
-    @ManyToOne
-    public BrowserEndpoint browserEndpoint;
-
-    @Id
-    private String busStopId;
-
+    @ManyToMany
+    @Builder.Default
+    public List<BrowserEndpoint> browserEndpoints = new ArrayList<>();
 }
