@@ -1,5 +1,6 @@
 package ie.tcd.scss.busnotifier.config;
 
+import ie.tcd.scss.busnotifier.domain.User;
 import ie.tcd.scss.busnotifier.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -51,24 +52,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter  {
             return;
         }
 
-        UserDetails userDetails;
+        User user;
 
         try {
-            userDetails = userDetailsService.loadUserByUsername(username);
+            user = (User) userDetailsService.loadUserByUsername(username);
+            user.browserEndpoints = null;
+            user.dublinBusSubscriptions = null;
         } catch (UsernameNotFoundException e) {
             System.out.printf("Rejecting a user `%s`, not found\n", username);
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (!jwtService.validate(token, userDetails)) {
+        if (!jwtService.validate(token, user)) {
             filterChain.doFilter(request, response);
             return;
         }
         var authenticationToken = new UsernamePasswordAuthenticationToken(
-                userDetails,
+                user,
                 null,
-                userDetails.getAuthorities()
+                user.getAuthorities()
         );
         authenticationToken.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
