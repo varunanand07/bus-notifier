@@ -1,0 +1,19 @@
+logging:
+  level:
+    org:
+      springframework:
+        web: TRACE
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:54321/bus_notifier
+    username: spring-boot
+    password: spring-boot
+    driver: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true
+    database: postgresql
