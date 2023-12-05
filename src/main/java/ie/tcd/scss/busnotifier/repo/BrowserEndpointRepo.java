@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public interface BrowserEndpointRepo extends CrudRepository<BrowserEndpoint, Integer> {
     List<BrowserEndpoint> findByUser(User user);
+    
     Optional<BrowserEndpoint> findByUserAndEndpoint(User user, String endpoint);
 
     void deleteByUserAndEndpoint(User user, String endpoint);
