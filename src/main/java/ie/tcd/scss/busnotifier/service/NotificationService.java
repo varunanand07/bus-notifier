@@ -172,7 +172,7 @@ public class NotificationService {
                         }
                     }
                 }
-                tripIdToNotificationsGiven.put(closestTrip.tripId(), (int) minutesToArrival);
+                // tripIdToNotificationsGiven.put(closestTrip.tripId(), (int) minutesToArrival);
             }
         } catch (IOException | InterruptedException | NoSuchFieldException | IllegalAccessException e ) {
             e.printStackTrace();
@@ -257,6 +257,10 @@ public class NotificationService {
                     .browserEndpoints(List.of(browserEndpoint))
                     .activeTimeRanges(List.of())
                     .build();
+            dublinBusSubscriptionRepo.save(dublinBusSubscription);
+        } else {
+            var dublinBusSubscription = dublinBusSubscriptionRepo.findByUserAndBusStopIdAndBusId(user, busStopId, busId).orElseThrow();
+            dublinBusSubscription.getBrowserEndpoints().add(browserEndpointRepo.findByUserAndEndpoint(user, endpoint).orElseThrow());
             dublinBusSubscriptionRepo.save(dublinBusSubscription);
         }
     }
