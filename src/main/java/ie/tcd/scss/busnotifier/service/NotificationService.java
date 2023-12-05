@@ -210,10 +210,14 @@ public class NotificationService {
     }
 
     public List<GeneralBusStopUpdateDTO> getMostRecentTripUpdate() {
-        if (mostRecentUpdate == null) {
-            return List.of();
-        } else {
-            return mostRecentUpdate
+        var subs = dublinBusSubscriptionRepo.findAll().stream().map( sub -> new GtfsService.StopAndRoute(sub.getBusStopId(), sub.getBusId())).toList();
+        Map<GtfsService.StopAndRoute, List<GtfsService.TripIdAndStopTime>> update = null;
+        try {
+            update = gtfsService.fetchTripUpdates(GtfsService.FeedSource.STALE, subs);
+        } catch (IOException | IllegalAccessException | NoSuchFieldException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return update
                     .entrySet()
                     .stream()
                     .flatMap(stopAndCode -> stopAndCode
@@ -230,7 +234,6 @@ public class NotificationService {
                             )
                     )
                     .toList();
-        }
     }
 
     /**

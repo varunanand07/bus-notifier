@@ -4,12 +4,8 @@ A tool for receiving notifications when your bus is due to arrive soon.
 
 ## Setup
 
-VAPID keys for testing purposes are provided in the `.env` file
-included in the repository.  If using intellij, add these to your run
-configuration:
-
-![img](images/intellij-1.png)
-![img](images/intellij-2.png)
+VAPID keys for testing purposes are provided in the `application.yml`
+file as the fields `vapid.public.key` and `vapid.private.key`.
 
 There are many ways to create fresh VAPID keys, such as via:
 
@@ -22,24 +18,14 @@ generated as follows:
 ```bash
 head -c 256 /dev/random | hexdump -v -e '/1 "%02X"'
 ```
-# Running Postgres
-
-You can either run an instance of postgres locally and manage
-databases with pgAdmin, or you can use the docker configuration as
-follows:
-
-```bash
-docker compose up postgres
-```
 
 ## General Transport Feed Specification (GTFS) related set up
 
-First of all you need to download the static GTFS-R data. I have made
-the data accessible at a google drive link
+You need to download the static GTFS-R data. I have made the data
+accessible at this google drive link
 [here](https://drive.google.com/file/d/1DBTmJlNgJlj-NjUgi6mk_ncmfDuWwWWi/view?usp=sharing). You
 will have to extract that to a folder called `transposed` in the root
-of the project. You must then set the `GTFS_DIR` environment variable
-to the location of that folder.
+of the project.
 
 Note that the publicly available GTFS data accesible from the
 Transport For Ireland (TFI) website will not work as it is not for
@@ -66,5 +52,37 @@ If you download a newer version from the GTFS-R webpage on the NTA
 website, execute the following:
 
 ```
-bash transpose.sh "<folder where you extracted the gtfsr .txt files>"
+bash transpose.bash "<folder where you extracted the gtfsr .txt files>"
+```
+
+# Running Postgres
+
+Postgres is ran in a docker container. The specification is placed in
+a docker compose file so all you need to do to run postgres is:
+
+```bash
+docker compose up
+```
+
+It is important that the static GTFS-R data was bind mounted properly
+into the docker container. Assuming that the `transposed/` directory
+in the project root contains `.txt` files, it is safe to assume that
+they will be bind mounted properly into the docker container. If you
+are usure, you can check via:
+
+```bash
+docker compose exec ls /transposed
+```
+
+The expected output is:
+
+```
+agency.txt
+calendar_dates.txt
+calendar.txt
+feed_info.txt
+routes.txt
+stops.txt
+stop_times.txt
+trips.txt
 ```

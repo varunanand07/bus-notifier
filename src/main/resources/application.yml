@@ -1,3 +1,4 @@
+# Standard Configuration
 logging.level.org.springframework.web: TRACE
 spring.main.lazy-initialization: true
 spring.datasource.url: jdbc:postgresql://localhost:54321/bus_notifier
@@ -7,3 +8,10 @@ hibernate.hbm2ddl.schema_filter_provider: ie.tcd.scss.busnotifier.config.Provide
 spring.jpa.properties.hibernate.hbm2ddl.schema_filter_provider: ie.tcd.scss.busnotifier.config.Provider
 spring.jpa.hibernate.ddl-auto: create-drop
 spring.jpa.database: postgresql
+
+# Bean Configuration
+vapid.public.key: BJJRz7Y9pZQUqyVwMx0ijFpna5Pbd9R_l0YMY9K8qHFXYr9_OwDG1gh5YSNYLCEk7kPU9ApTWNsIm_yzqw_tjkA=
+vapid.private.key: TYSPY-MYLWbFxroJNutPW77BfMKyeXQfkr5fpRKvwvs=
+jwt.signing.key: H8ZJiXOLmEz0VODtX49W7cd5kAUfhu2HZJYebVa9uIN6jZ1YkiQxMTMlwidqYF6RrXTd9b9C6TtFtqqmpqVOLBs7SZZnTgN9OQM6Fi5Cp+bxLhjyqzIzh8EoTc/w23Wuz4EaDRAoirfTqi8ByeJq6BR+9RqWGknxCSDQlM51C8Qof+YzCgwEmziM4UkV1vMtH0V3w2IwLbiTo0jX/ip8ztb+JsVzJuqUXzf/5SKxLET/mWv3OoighkCR4+HrR2m+9E1YEgqbwb0weWa4Hm81Wib4ZrZcboQ39EwFzYQzqeZBdBfr7A/kel8kC4EIyA0z0WCoLcVxThunxnwUOBBfiA==
+nta.api.key: 6040d305880544a48007773bde4bf118
+gtfs.dir: ./transposed

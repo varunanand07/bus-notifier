@@ -43,6 +43,7 @@ public class GtfsService {
 
     @Autowired
     private StopTimesRepo stopTimesRepo;
+    private GtfsRealtime.FeedMessage staleFeed;
 
     public static class StopRow {
         @CsvBindByName(column = "stop_id")  String id;
@@ -222,25 +223,44 @@ public class GtfsService {
         return stop == null ? null : stop.name;
     }
 
+    public enum FeedSource {
+        NETWORK,
+        STALE,
+        NONE
+    };
+
     public Map<StopAndRoute, List<TripIdAndStopTime>> fetchTripUpdates(List<StopAndRoute> queryStopsAndRoutes) throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+        return fetchTripUpdates(FeedSource.NETWORK, queryStopsAndRoutes);
+    }
+
+    public Map<StopAndRoute, List<TripIdAndStopTime>> fetchTripUpdates(FeedSource feedSource, List<StopAndRoute> queryStopsAndRoutes) throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+        return switch (feedSource) {
+            case NETWORK -> {
+                try {
+                    var headers = new HttpHeaders();
+                    headers.set("x-api-key", ntaApiKey);
+                    var response = restTemplate.exchange(
+                            "https://api.nationaltransport.ie/gtfsr/v2/gtfsr",
+                            HttpMethod.GET,
+                            new HttpEntity<>(headers),
+                            byte[].class
+                    );
+                    logger.info("Done geting protobuf files from the net");
+                    this.staleFeed = GtfsRealtime.FeedMessage.parseFrom(response.getBody());
+                    yield fetchTripUpdates(this.staleFeed, queryStopsAndRoutes);
+                } catch (RestClientException e) {
+                    yield  fetchTripUpdates(FeedSource.NONE, queryStopsAndRoutes);
+                }
+            }
+            case STALE -> fetchTripUpdates(this.staleFeed, queryStopsAndRoutes);
+            default -> fetchTripUpdates((GtfsRealtime.FeedMessage) null, queryStopsAndRoutes);
+        };
+    }
+
+    public Map<StopAndRoute, List<TripIdAndStopTime>> fetchTripUpdates(GtfsRealtime.FeedMessage feed, List<StopAndRoute> queryStopsAndRoutes) throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
 
         var result = new HashMap<StopAndRoute, List<TripIdAndStopTime>>();
-        try {
-            var headers = new HttpHeaders();
-            headers.set("x-api-key", ntaApiKey);
-            var response = restTemplate.exchange(
-                    "https://api.nationaltransport.ie/gtfsr/v2/gtfsr",
-                    HttpMethod.GET,
-                    new HttpEntity<>(headers),
-                    byte[].class
-            );
-            logger.info("Done geting protobuf files from the net");
-            var feed = GtfsRealtime.FeedMessage.parseFrom(response.getBody());
-            /* GtfsRealtime.FeedMessage feed;
-            var realTime = false;
-            try (var file = new FileInputStream("/home/naza/projects/pwa/dump.pbuf")) {
-                feed = GtfsRealtime.FeedMessage.parseFrom(file);
-            } */
+        if (feed != null) {
 
             for (var queryStopAndRoute : queryStopsAndRoutes) {
                 var tripIdAndStopTimes = new ArrayList<TripIdAndStopTime>();
@@ -305,11 +325,15 @@ public class GtfsService {
                     result.put(queryStopAndRoute, tripIdAndStopTimes);
                 }
             }
-        } catch (RestClientException e) {
+        } else {
             for (var queryStopAndRoute : queryStopsAndRoutes) {
                 var tripIdAndStopTimes = new ArrayList<TripIdAndStopTime>();
                 var queryRouteName = queryStopAndRoute.route;
                 var queryStopCode = queryStopAndRoute.stop;
+                if (!stopsByCode.containsKey(queryStopCode)) {
+                    logger.warn("Unrecognised stop code {} - Skipping", queryStopCode);
+                    continue;
+                }
                 logger.info("Regarding bus stop: " + stopsByCode.get(queryStopCode).name);
                 var tripsForRotue = trips
                         .stream()
