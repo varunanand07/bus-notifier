@@ -8,7 +8,7 @@ mkdir -p transposed
 for file in "$1"/*.txt
 do
     base="$(basename $file)"
-    if [[ "$file" =~ "stop_times.txt" ]]
+    if [ "$base" = "stop_times.txt" ]
     then
         echo "Transposing $base"
         transpose "$file" > transposed/"$base"
