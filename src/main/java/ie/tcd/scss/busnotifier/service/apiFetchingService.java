@@ -1,21 +1,21 @@
-package ie.tcd.scss.busnotifier.services;
+package ie.tcd.scss.busnotifier.service;
 
 import com.google.transit.realtime.GtfsRealtime.*;
+
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
 import java.net.*;
 import java.io.*;
+import java.util.Arrays;
 import java.util.zip.*;
 import java.nio.file.*;
 
 @Service
-public class busNotifierService {
-
-    private final String gtfsRealtimeUrl = "https://www.transportforireland.ie/transitData/Data/GTFS_Dublin_Bus.zip";
+public class apiFetchingService {
     private final String dataDirectory = "data/";
 
-    public TripUpdate getTimetableForStop(String stopId) {
+    public TripUpdate.StopTimeUpdate getTimetableForStop(String stopId) {
 
         try {
             File localDataFile = new File(dataDirectory);
@@ -28,16 +28,25 @@ public class busNotifierService {
             );
             for (FeedEntity entity : feed.getEntityList()) {
                 if (entity.hasTripUpdate()) {
-                    return entity.getTripUpdate();
+                    TripUpdate tripUpdate = entity.getTripUpdate();
+
+                    for (TripUpdate.StopTimeUpdate stopTimeUpdate : tripUpdate.getStopTimeUpdateList()) {
+                        if (stopTimeUpdate.hasStopId() && stopTimeUpdate.getStopId().equals(stopId)) {
+                            return stopTimeUpdate;
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
-            System.out.println(e.getStackTrace());
+            System.out.println(Arrays.toString(e.getStackTrace()));
         }
         return null;
+
     }
 
     private void downloadZipFile() throws IOException {
+
+        final String gtfsRealtimeUrl = "https://www.transportforireland.ie/transitData/Data/GTFS_Dublin_Bus.zip";
 
         byte[] buffer = new byte[1024];
 
