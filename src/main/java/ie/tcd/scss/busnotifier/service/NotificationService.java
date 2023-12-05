@@ -106,9 +106,10 @@ public class NotificationService {
                     active ? "active" : "NOT ACTIVE!",
                     day, hour, minute
             );
+
+            var stopAndRoute = new GtfsService.StopAndRoute(subscription.getBusStopId(), subscription.getBusId());
+            query.add(stopAndRoute);
             if (active) {
-                var stopAndRoute = new GtfsService.StopAndRoute(subscription.getBusStopId(), subscription.getBusId());
-                query.add(stopAndRoute);
                 if (!activeSubscriptions.containsKey(stopAndRoute))
                     activeSubscriptions.put(stopAndRoute, new ArrayList<>());
                 activeSubscriptions.get(stopAndRoute).add(subscription);

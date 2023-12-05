@@ -32,7 +32,6 @@ class LessThanRawTests {
 	@Test
 	public void test() throws IOException, NoSuchFieldException, InterruptedException, IllegalAccessException {
 		gtfsService.loadStaticData();
-		gtfsService.fetchStopTimes(List.of("C1", "C2"));
 		var query = List.of(
 				new GtfsService.StopAndRoute("3368", "C2"),
 				new GtfsService.StopAndRoute("3368", "C1")

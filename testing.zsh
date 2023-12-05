@@ -1,6 +1,6 @@
 username="xx_test_${RANDOM}_xx"
 bus_stop_id="3368"
-bus_id="C2"
+bus_id="C1"
 headers=(-H "Content-Type: application/json" -H "Origin: http://localhost:3000")
 subscription='{"endpoint":"https://updates.push.services.mozilla.com/wpush/v2/gAAAAABlbr3xA0Ka9WbZB-jhJM7R-FZOyFeErMeqMNP9yeirsEcDftLK8GwzEqAwuR70OYoAKm2P1rvXquo_NcSuSEHX6IaPZsr4OB4iRF2C2gZMb37R9BKKOSFjjbbLD_H6QO__zLyusI4bCm4vDdrQ4SY2a0rlnZHyLkq0gpSBlV8ag5fdNe8","expirationTime":null,"keys":{"auth":"znVGgyruX84H1rRhJckQNg==","p256dh":"BJQSn+u8vp8jovhMhMN39z815QZvlQKd0h4XXNVyXSft1HCiKL+84RU9A28HI5nXLcjdB5WD8Bcr7QE9Zivi4Y0="}}'
 
@@ -14,6 +14,7 @@ token=$( { curl -X POST localhost:8080/register $headers -d @- <<EOF  || exit 1 
 }'
 EOF
 )
+echo "Got token: $token"
 headers=($headers -H "Authorization: Bearer $token")
 
 echo "--- MAKING BROWSER ENDPOINT ---"
@@ -47,3 +48,6 @@ curl localhost:8080/user $headers -i || exit 1
 
 echo "--- FETCHING THE TRIPS ---"
 curl localhost:8080/generalBusStopUpdates $headers -i || exit 1
+
+echo "--- FETCHING THE ENDPOINTS ---"
+curl localhost:8080/browserEndpoints $headers -i || exit 1

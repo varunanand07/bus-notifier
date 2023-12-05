@@ -126,6 +126,6 @@ public class NotificationController {
 
     @GetMapping("generalBusStopUpdates")
     private ResponseEntity<Object> getGeneralBusStopUpdates() {
-        return ResponseEntity.ok(notificationService.getMostRecentTripUpdate())v;
+        return ResponseEntity.ok(notificationService.getMostRecentTripUpdate());
     }
 }

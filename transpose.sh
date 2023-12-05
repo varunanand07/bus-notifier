@@ -5,9 +5,15 @@ transpose() {
     awk -F , -v RS='\r\n' "$script" $1
 }
 mkdir -p transposed
-for file in "$GTFS_DIR"/*.txt
+for file in "$1"/*.txt
 do
-    [[ "$file" =~ "shapes.txt" ]] && continue;
-    echo transposing "$(basename $file)"
-    transpose "$file" > transposed/"$(basename $file)"
+    base="$(basename $file)"
+    if [[ "$file" =~ "stop_times.txt" ]]
+    then
+        echo "Transposing $base"
+        transpose "$file" > transposed/"$base"
+    else
+        echo "Copying $base"
+        cp "$file" transposed/"$base"
+    fi
 done
