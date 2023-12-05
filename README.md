@@ -29,7 +29,7 @@ databases with pgAdmin, or you can use the docker configuration as
 follows:
 
 ```bash
-bash postgres.bash
+docker compose up postgres
 ```
 
 ## General Transport Feed Specification (GTFS) related set up
@@ -37,9 +37,9 @@ bash postgres.bash
 First of all you need to download the static GTFS-R data. I have made
 the data accessible at a google drive link
 [here](https://drive.google.com/file/d/1DBTmJlNgJlj-NjUgi6mk_ncmfDuWwWWi/view?usp=sharing). You
-will have to extract that to a folder called `gtfs` somewhere. You
-must then set the `GTFS_DIR` environment variable to the location of
-that folder.
+will have to extract that to a folder called `transposed` in the root
+of the project. You must then set the `GTFS_DIR` environment variable
+to the location of that folder.
 
 Note that the publicly available GTFS data accesible from the
 Transport For Ireland (TFI) website will not work as it is not for
@@ -66,5 +66,5 @@ If you download a newer version from the GTFS-R webpage on the NTA
 website, execute the following:
 
 ```
-GTFS_DIR="<folder where you extracted the gtfsr .txt files>" bash transpose.sh
+bash transpose.sh "<folder where you extracted the gtfsr .txt files>"
 ```
