@@ -41,7 +41,7 @@ public class NotificationService {
     /**
      * Notification rate limiter.
      */
-    private static final long NOTIFICATION_SPACING = 2;
+    private static final long NOTIFICATION_SPACING = 5;
     private final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     private final static ObjectMapper objectMapper = new ObjectMapper();
