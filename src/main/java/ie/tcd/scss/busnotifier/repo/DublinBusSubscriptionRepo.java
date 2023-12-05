@@ -10,8 +10,8 @@ import java.util.Optional;
 
 public interface DublinBusSubscriptionRepo extends CrudRepository<DublinBusSubscription, Integer> {
 
-    @EntityGraph(attributePaths = { "user" })
-    Iterable<DublinBusSubscription> findAll();
+    @EntityGraph(attributePaths = { "user", "browserEndpoints"})
+    List<DublinBusSubscription> findAll();
     Optional<DublinBusSubscription> findByUserAndBusStopIdAndBusId(User user, String busStopId, String busId);
     List<DublinBusSubscription> findByUser(User user);
 

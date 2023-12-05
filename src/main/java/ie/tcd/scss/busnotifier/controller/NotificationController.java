@@ -5,6 +5,7 @@ import ie.tcd.scss.busnotifier.schema.*;
 import ie.tcd.scss.busnotifier.service.NotificationService;
 import jakarta.validation.Valid;
 import nl.martijndwars.webpush.Subscription;
+import org.aspectj.weaver.ast.Not;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -121,5 +122,10 @@ public class NotificationController {
     ) {
         notificationService.deleteDublinBusSubscriptionActiveTimeRange(user, busStopId, busId, request);
         return getDublinBusSubscriptionActiveTimeRanges(user, busStopId, busId);
+    }
+
+    @GetMapping("generalBusStopUpdates")
+    private ResponseEntity<Object> getGeneralBusStopUpdates() {
+        return ResponseEntity.ok(notificationService.getMostRecentTripUpdate());
     }
 }

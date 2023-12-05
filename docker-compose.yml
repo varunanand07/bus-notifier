@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: spring-boot
+      POSTGRES_PASSWORD: spring-boot
+      POSTGRES_DB: bus_notifier
+    ports:
+      - 54321:5432
+    volumes:
+      - ./transposed:/transposed
