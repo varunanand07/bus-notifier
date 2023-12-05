@@ -33,11 +33,14 @@ GTFS-R, the realtime variety of GTFS.
 
 The next thing you need to be aware of is that my API key is currently
 used for getting live updates from the GTFS-R API of the National
-Transport Authoriy. If you would like to obtain your own api key, a
-series of images is presented below showcasing the basic outline of
-how you might do that.
+Transport Authoriy (NTA). If you would like to obtain your own api
+key, a series of images is presented below showcasing the basic
+outline of how you might do that.
 
 ![img](images/gtfs-guide.png)
+
+If you chose to use your own NTA API key, make sure you set
+`nta.api.key` to your api key in the `application.yml`.
 
 The data in the zip file I provide has had the columns rearranged to
 be in alphabetical order as this is the order that spring boot (via
